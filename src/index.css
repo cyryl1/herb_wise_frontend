@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+@theme {
+  /* Landing Page Colors */
+  --color-landing-primary: #2C5F2D;
+  --color-landing-primary-light: #A4B494;
+  --color-landing-text-primary: #2C5F2D;
+  --color-landing-text-secondary: #9A8B7A;
+  --color-landing-text-body: #36454F;
+  --color-landing-background-light: #F5F5DC;
+  --color-landing-background-dark: #1a1e1a;
+  --color-landing-border-color: #e0e0d1;
+
+  /* Start Screen Colors */
+  --color-start-primary: #3A5F0B;
+  --color-start-primary-light: #eef2e7;
+  --color-start-secondary: #F5F5DC;
+  --color-start-accent: #DAA520;
+  --color-start-text-main: #333333;
+  --color-start-text-subtle: #5c5c5c;
+  --color-start-border-color: #d9e1cd;
+  --color-start-background-light: #F5F5DC;
+  --color-start-background-dark: #181a14;
+
+  /* Dashboard Colors */
+  --color-dash-primary: #225740;
+  --color-dash-secondary: #F0E68C;
+  --color-dash-accent: #FFC107;
+  --color-dash-background-light: #f8f9fa;
+  --color-dash-background-dark: #101814;
+  --color-dash-surface-light: #ffffff;
+  --color-dash-surface-dark: #1a2c23;
+  --color-dash-text-light-primary: #1f2923;
+  --color-dash-text-dark-primary: #e1e3e2;
+  --color-dash-text-light-secondary: #6c757d;
+  --color-dash-text-dark-secondary: #a0a7a3;
+  
+  /* Fonts */
+  --font-display: "Lexend", "sans-serif";
+  
+  /* Border Radius */
+  --radius-lg: 2rem;
+  --radius-xl: 3rem;
+  --radius-start-lg: 1.5rem;
+  --radius-start-xl: 2rem;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Base styles */
+body {
+  @apply bg-landing-background-light dark:bg-landing-background-dark font-display text-landing-text-body dark:text-gray-300;
+}
