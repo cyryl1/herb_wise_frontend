@@ -2,7 +2,7 @@
  * API service for HerbWise backend communication
  */
 
-const API_BASE_URL = import.meta.env.BASE_URL || 'http://127.0.0.1:8000';
+const API_BASE_URL = import.meta.env.BASE_URL || 'https://herb-wise-78478823031.europe-west1.run.app';
 
 /**
  * Send a message to the HerbWise chat API
@@ -20,6 +20,9 @@ export const sendChatMessage = async ({ textInput, conversationId, imageBase64 }
     if (conversationId) requestBody.conversation_id = conversationId;
     if (imageBase64) requestBody.image_base64 = imageBase64;
 
+    console.log('🚀 Sending request to:', `${API_BASE_URL}/chat`);
+    console.log('📤 Request body:', requestBody);
+
     const response = await fetch(`${API_BASE_URL}/chat`, {
       method: 'POST',
       headers: {
@@ -28,14 +31,19 @@ export const sendChatMessage = async ({ textInput, conversationId, imageBase64 }
       body: JSON.stringify(requestBody),
     });
 
+    console.log('📡 Response status:', response.status);
+
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ API error response:', errorText);
       throw new Error(`API request failed: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
+    console.log('✅ Response data:', data);
     return data;
   } catch (error) {
-    console.error('Error sending chat message:', error);
+    console.error('❌ Error sending chat message:', error);
     throw error;
   }
 };
