@@ -7,19 +7,19 @@ import InfoPanel from '../components/dashboard/InfoPanel';
 const Dashboard = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { initialImage, initialMessage, sessionId: initialSessionId } = location.state || {};
+  const { conversationId, initialMessages, herbInfo: initialHerbInfo } = location.state || {};
   
-  const [currentSessionId, setCurrentSessionId] = useState(initialSessionId || null);
+  const [currentConversationId, setCurrentConversationId] = useState(conversationId || null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [herbInfo, setHerbInfo] = useState(null);
-  const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(false);
+  const [herbInfo, setHerbInfo] = useState(initialHerbInfo || null);
+  const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(!!initialHerbInfo);
 
   useEffect(() => {
-    // If we have initial data from Identify page, set that as current session
-    if (initialSessionId) {
-      setCurrentSessionId(initialSessionId);
+    // If we have conversation ID from Identify page, set it as current
+    if (conversationId) {
+      setCurrentConversationId(conversationId);
     }
-  }, [initialSessionId]);
+  }, [conversationId]);
 
   const handleNewChat = () => {
     // Navigate to identify page to start a new chat
@@ -27,16 +27,16 @@ const Dashboard = () => {
     navigate('/identify');
   };
 
-  const handleSelectSession = (sessionId) => {
-    setCurrentSessionId(sessionId);
+  const handleSelectSession = (conversationId) => {
+    setCurrentConversationId(conversationId);
     setIsSidebarOpen(false); // Close sidebar on mobile after selection
     // Clear the location state when switching sessions
-    navigate('/dashboard', { replace: true, state: { sessionId } });
+    navigate('/dashboard', { replace: true, state: { conversationId } });
   };
 
-  const handleDeleteSession = (sessionId) => {
+  const handleDeleteSession = (conversationId) => {
     // If deleting current session, redirect to identify page
-    if (sessionId === currentSessionId) {
+    if (conversationId === currentConversationId) {
       navigate('/identify');
     }
   };
@@ -47,7 +47,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="font-display bg-dash-background-light dark:bg-dash-background-dark text-dash-text-light-primary dark:text-dash-text-dark-primary h-screen w-full overflow-hidden">
+    <div className="font-display bg-dash-background-light dark:bg-dash-background-dark text-dash-text-light-primary dark:text-dash-text-dark-primary h-screen w-full overflow-hidden page-transition">
       <div className="flex h-full w-full relative">
         {/* Mobile Menu Button */}
         <button
@@ -74,7 +74,7 @@ const Dashboard = () => {
           ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}>
           <Sidebar 
-            currentSessionId={currentSessionId}
+            currentConversationId={currentConversationId}
             onNewChat={handleNewChat}
             onSelectSession={handleSelectSession}
             onDeleteSession={handleDeleteSession}
@@ -83,12 +83,11 @@ const Dashboard = () => {
 
         {/* Chat Area */}
         <ChatArea 
-          initialImage={initialImage} 
-          initialMessage={initialMessage} 
-          sessionId={currentSessionId}
+          conversationId={currentConversationId}
+          initialMessages={initialMessages}
           onHerbIdentified={handleHerbIdentified}
-          onOpenInfoPanel={() => herbInfo && setIsInfoPanelOpen(true)}
-          key={currentSessionId}
+          onOpenInfoPanel={() => setIsInfoPanelOpen(true)}
+          key={currentConversationId}
         />
 
         {/* Info Panel - Only show when herbInfo exists */}

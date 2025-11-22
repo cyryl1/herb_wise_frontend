@@ -3,22 +3,52 @@ import { useNavigate } from 'react-router-dom';
 import AppNavbar from '../components/layout/AppNavbar';
 import ImageUploader from '../components/identify/ImageUploader';
 import ChatInterface from '../components/identify/ChatInterface';
+import { sendChatMessage, transformBackendResponse } from '../services/api';
 
 const Identify = () => {
   const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState(null);
   const [message, setMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!message && !selectedImage) return;
     
-    navigate('/dashboard', { 
-      state: { 
-        initialMessage: message,
-        initialImage: selectedImage,
-        sessionId: Date.now()
-      } 
-    });
+    setIsLoading(true);
+
+    try {
+      // Send first message to backend (no conversation_id)
+      const response = await sendChatMessage({
+        textInput: message || undefined,
+        imageBase64: selectedImage || undefined,
+      });
+
+      // Transform backend response to frontend format
+      const aiMessage = transformBackendResponse(response);
+      
+      // Create user message
+      const userMessage = {
+        id: Date.now(),
+        sender: 'user',
+        text: message,
+        image: selectedImage,
+        timestamp: new Date().toISOString(),
+      };
+
+      // Navigate to dashboard with initial data
+      navigate('/dashboard', { 
+        state: { 
+          conversationId: response.conversation_id,
+          initialMessages: [userMessage, aiMessage],
+          herbInfo: aiMessage.herbInfo || null,
+        },
+        replace: true
+      });
+    } catch (error) {
+      console.error('Error sending message:', error);
+      // TODO: Show error message to user
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -37,6 +67,7 @@ const Identify = () => {
                   message={message} 
                   onMessageChange={setMessage} 
                   onSend={handleSend}
+                  isLoading={isLoading}
                 />
               </main>
             </div>

@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-const ChatInterface = ({ message, onMessageChange, onSend }) => {
+const ChatInterface = ({ message, onMessageChange, onSend, isLoading }) => {
   const sampleQuestions = [
     "What are the benefits of this herb?",
     "Is this safe to consume?",
@@ -21,7 +21,7 @@ const ChatInterface = ({ message, onMessageChange, onSend }) => {
             </span>
           </div>
           <p className="text-start-text-main dark:text-gray-300 text-base font-normal leading-normal">
-            Upload a photo of an herb to get started.
+            {isLoading ? 'Analyzing your request...' : 'Upload a photo of an herb to get started.'}
           </p>
         </div>
         <div className="pt-4">
@@ -59,17 +59,21 @@ const ChatInterface = ({ message, onMessageChange, onSend }) => {
                 value={message}
                 onChange={(e) => onMessageChange(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
+                  if (e.key === 'Enter' && !isLoading) {
                     onSend();
                   }
                 }}
+                disabled={isLoading}
               />
               <div className="flex border-none bg-start-primary-light dark:bg-gray-800 items-center justify-center pr-2 rounded-r-start-xl border-l-0">
                 <button
                   onClick={onSend}
-                  className="flex items-center justify-center p-1.5 text-start-text-subtle/80 dark:text-gray-500 hover:text-start-primary dark:hover:text-start-primary-light"
+                  disabled={isLoading}
+                  className="flex items-center justify-center p-1.5 text-start-text-subtle/80 dark:text-gray-500 hover:text-start-primary dark:hover:text-start-primary-light disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <span className="material-symbols-outlined">send</span>
+                  <span className="material-symbols-outlined">
+                    {isLoading ? 'hourglass_empty' : 'send'}
+                  </span>
                 </button>
               </div>
             </div>
@@ -84,6 +88,7 @@ ChatInterface.propTypes = {
   message: PropTypes.string.isRequired,
   onMessageChange: PropTypes.func.isRequired,
   onSend: PropTypes.func.isRequired,
+  isLoading: PropTypes.bool,
 };
 
 export default ChatInterface;

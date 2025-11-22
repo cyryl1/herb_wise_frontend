@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { getAllSessions, groupSessionsByDate, deleteSession } from '../../utils/storage';
 
-const Sidebar = ({ currentSessionId, onNewChat, onSelectSession, onDeleteSession }) => {
+const Sidebar = ({ currentConversationId, onNewChat, onSelectSession, onDeleteSession }) => {
   const [sessions, setSessions] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredSessions, setFilteredSessions] = useState([]);
@@ -59,7 +59,7 @@ const Sidebar = ({ currentSessionId, onNewChat, onSelectSession, onDeleteSession
       setFilteredSessions(allSessions);
       
       // Notify parent if deleting current session
-      if (sessionId === currentSessionId && onDeleteSession) {
+      if (sessionId === currentConversationId && onDeleteSession) {
         onDeleteSession(sessionId);
       }
       
@@ -80,7 +80,7 @@ const Sidebar = ({ currentSessionId, onNewChat, onSelectSession, onDeleteSession
           <div
             key={session.sessionId}
             className={`group relative flex items-center gap-3 px-4 py-2.5 rounded-full ${
-              session.sessionId === currentSessionId
+              session.sessionId === currentConversationId
                 ? 'bg-dash-primary/10 dark:bg-dash-primary/20'
                 : 'hover:bg-gray-100 dark:hover:bg-white/5'
             }`}
@@ -90,12 +90,12 @@ const Sidebar = ({ currentSessionId, onNewChat, onSelectSession, onDeleteSession
               onClick={() => onSelectSession(session.sessionId)}
             >
               <span className={`material-symbols-outlined shrink-0 ${
-                session.sessionId === currentSessionId ? 'text-dash-primary' : ''
+                session.sessionId === currentConversationId ? 'text-dash-primary' : ''
               }`}>
                 chat_bubble
               </span>
               <p className={`text-sm font-medium leading-normal truncate ${
-                session.sessionId === currentSessionId ? 'text-dash-primary' : ''
+                session.sessionId === currentConversationId ? 'text-dash-primary' : ''
               }`}>
                 {session.title}
               </p>
@@ -192,7 +192,7 @@ const Sidebar = ({ currentSessionId, onNewChat, onSelectSession, onDeleteSession
 };
 
 Sidebar.propTypes = {
-  currentSessionId: PropTypes.number,
+  currentConversationId: PropTypes.string,
   onNewChat: PropTypes.func.isRequired,
   onSelectSession: PropTypes.func.isRequired,
   onDeleteSession: PropTypes.func,

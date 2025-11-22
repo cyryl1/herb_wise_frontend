@@ -1,7 +1,6 @@
 const ENCRYPTION_KEY = import.meta.env.VITE_ENCRYPTION_KEY || 'herb_wise_secret_key';
 export const STORAGE_KEY = import.meta.env.VITE_STORAGE_KEY || 'herb_wise_chat_session';
 export const SESSIONS_STORAGE_KEY = import.meta.env.VITE_SESSIONS_STORAGE_KEY || 'herb_wise_chat_sessions';
-export const SESSION_DURATION = Number(import.meta.env.VITE_SESSION_DURATION) || 24 * 60 * 60 * 1000;
 
 export const encryptData = (data) => {
   try {

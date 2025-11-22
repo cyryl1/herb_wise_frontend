@@ -3,194 +3,73 @@ import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { 
   getSessionData,
-  saveSessionData,
-  SESSION_DURATION
+  saveSessionData
 } from '../../utils/storage';
+import { sendChatMessage, transformBackendResponse } from '../../services/api';
 
-const ChatArea = ({ initialImage, initialMessage, sessionId, onHerbIdentified, onOpenInfoPanel }) => {
+const ChatArea = ({ conversationId, initialMessages, onHerbIdentified, onOpenInfoPanel }) => {
   const navigate = useNavigate();
   
-  // TODO: onHerbIdentified will be used when implementing actual herb identification
-  // Example: onHerbIdentified({ name: "Scent Leaf", scientificName: "..." })
-  
-  const [messages, setMessages] = useState([
+  const [messages, setMessages] = useState(initialMessages || [
     {
       id: 'welcome',
       sender: 'ai',
       text: 'Hello! I can help you identify medicinal herbs. How can I assist you today? You can upload an image or ask me a question.',
-      timestamp: new Date(),
+      timestamp: new Date().toISOString(),
     }
   ]);
   const [inputValue, setInputValue] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [isAIResponding, setIsAIResponding] = useState(false);
+  const [currentConversationId, setCurrentConversationId] = useState(conversationId || null);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
-  const processedSessionIdRef = useRef(null);
 
-  const simulateAIResponse = (hasImage = false, userImageUrl = null) => {
-    setIsAIResponding(true);
-    setTimeout(() => {
-      const aiMessage = {
-        id: Date.now() + 1,
-        sender: 'ai',
-        text: hasImage 
-          ? "I've analyzed your image. This appears to be a medicinal herb. Click the card below to see detailed information."
-          : "I'm here to help! Please upload an image of the herb you'd like to identify, and I'll provide detailed information about it.",
-        timestamp: new Date(),
-      };
-
-      // TODO: Replace with actual API call to backend for herb identification
-      // Backend will return herbInfo object if herb is identified from the image
-      if (hasImage) {
-        aiMessage.herbInfo = {
-          name: "Scent Leaf",
-          scientificName: "Ocimum gratissimum",
-          localNames: ["Efinrin (Yoruba)", "Nchanwu (Igbo)", "Daidoya (Hausa)"],
-          image: userImageUrl || "https://lh3.googleusercontent.com/aida-public/AB6AXuD_NkTxzCj5lqc1m103KeXReZL_J0p4N4AbwN6_-l2siOWdi1n2y1ggS1xtpvXJgOVikvswrrMLDaU7LQqcDEANUsU9mccwZrzQEvi6mmJv6uEgSnYbuZjLdOndjkMsP65hWKgSZAoRlNNUCL_49lqGaqsLfdVZiq6wE_lNnYfr0sYLWWmgs0paJVIcZSZyR8a0TPY_qCvtvSZ4l6fIdIoe88EDpwe_alDlXSghAYKhmvlKeN0ZWJlq7NFlcjeYfyep9xCgvN-8F6kt",
-          uses: [
-            "Traditionally used to treat digestive issues such as diarrhea and dysentery.",
-            "The essential oil is known for its antimicrobial properties, effective against certain bacteria and fungi.",
-            "Often used as a key ingredient in soups and stews, especially for postpartum mothers to aid recovery.",
-            "Used in herbal remedies to manage fever, colds, and coughs."
-          ],
-          benefits: [
-            "Rich in antioxidants that help protect cells from damage",
-            "Contains compounds with anti-inflammatory properties",
-            "May help boost immune system function",
-            "Supports digestive health and aids in nutrient absorption"
-          ],
-          preparation: [
-            "Fresh leaves can be added to soups and stews",
-            "Dried leaves can be brewed as tea",
-            "Essential oil can be extracted for topical use",
-            "Can be combined with other herbs for enhanced effect"
-          ],
-          safety: [
-            "Generally safe when used in culinary amounts",
-            "Pregnant women should consult healthcare provider before medicinal use",
-            "May interact with certain medications",
-            "Essential oil should be diluted before topical application"
-          ]
-        };
-      }
-      
-      setMessages(prev => {
-        const updatedMessages = [...prev, aiMessage];
-        // Save immediately after adding AI response
-        saveSessionData(sessionId, updatedMessages, Date.now());
-        // Trigger custom event to update sidebar
-        window.dispatchEvent(new Event('sessionsUpdated'));
-        return updatedMessages;
-      });
-      setIsAIResponding(false);
-      
-      // Check if response contains herbInfo and notify parent to open InfoPanel
-      if (aiMessage.herbInfo && onHerbIdentified) {
-        onHerbIdentified(aiMessage.herbInfo);
-      }
-    }, 1000);
-  };
-
-  // Load session data when sessionId changes
+  // Load conversation data when conversationId changes
   useEffect(() => {
-    if (!sessionId) return;
+    if (!currentConversationId) return;
 
-    const sessionData = getSessionData(sessionId);
+    const sessionData = getSessionData(currentConversationId);
     if (sessionData && sessionData.messages) {
-      console.log('📂 Loading session:', sessionId, 'with', sessionData.messages.length, 'messages');
+      console.log('📂 Loading conversation:', currentConversationId, 'with', sessionData.messages.length, 'messages');
       setMessages(sessionData.messages);
     }
-  }, [sessionId]);
+  }, [currentConversationId]);
 
-  // Handle initial data from Identify page
+  // Save initial messages if provided from Identify page
   useEffect(() => {
-    if ((initialImage || initialMessage) && processedSessionIdRef.current !== sessionId) {
-      processedSessionIdRef.current = sessionId;
-
-      // Check if this session already exists
-      const sessionData = getSessionData(sessionId);
-      if (sessionData && sessionData.messages && sessionData.messages.length > 0) {
-        // Restore existing session
-        setMessages(sessionData.messages);
-        return;
-      }
-
-      // New session - add the initial messages from Identify page
-      const newMessages = [];
-      if (initialImage) {
-        newMessages.push({
-          id: 'initial-image',
-          sender: 'user',
-          image: initialImage,
-          text: '',
-          timestamp: new Date(),
-        });
-      }
-      if (initialMessage) {
-        newMessages.push({
-          id: 'initial-message',
-          sender: 'user',
-          text: initialMessage,
-          timestamp: new Date(),
-        });
-      }
-      
-      setMessages(prev => [...prev, ...newMessages]);
-      simulateAIResponse(!!initialImage, initialImage); // Pass image flag and URL
-      
-      // Save initial conversation immediately
-      const initialConversation = [
-        {
-          id: 'welcome',
-          sender: 'ai',
-          text: 'Hello! I can help you identify medicinal herbs. How can I assist you today? You can upload an image or ask me a question.',
-          timestamp: new Date(),
-        },
-        ...newMessages
-      ];
-      saveSessionData(sessionId, initialConversation, Date.now());
-      // Trigger custom event to update sidebar
+    if (initialMessages && initialMessages.length > 0 && conversationId) {
+      setCurrentConversationId(conversationId);
+      setMessages(initialMessages);
+      saveSessionData(conversationId, initialMessages, Date.now());
       window.dispatchEvent(new Event('sessionsUpdated'));
-      
-      // Clear the navigation state so refresh doesn't trigger this again
-      setTimeout(() => {
-        navigate('.', { replace: true, state: { sessionId } });
-      }, 100);
     }
-  }, [initialImage, initialMessage, sessionId, navigate]);
+  }, [initialMessages, conversationId]);
 
-  // Session validation for direct dashboard access (no initial data from Identify)
+  // Session validation for direct dashboard access
   useEffect(() => {
-    // Skip validation if we have initial data (new session from Identify)
-    if (initialImage || initialMessage) {
+    // Skip validation if we have initial messages (new session from Identify)
+    if (initialMessages) {
       return;
     }
 
-    // If no sessionId provided, redirect to identify
-    if (!sessionId) {
-      console.log('No session ID - redirecting to identify');
+    // If no conversationId provided, redirect to identify
+    if (!conversationId) {
+      console.log('No conversation ID - redirecting to identify');
       navigate('/identify');
       return;
     }
 
-    // Check if session exists and is valid
-    const sessionData = getSessionData(sessionId);
+    // Check if conversation exists
+    const sessionData = getSessionData(conversationId);
     
     if (!sessionData) {
-      console.log('Session not found - redirecting to identify');
+      console.log('Conversation not found - redirecting to identify');
       navigate('/identify');
-      return;
+    } else {
+      setCurrentConversationId(conversationId);
     }
-
-    const { timestamp } = sessionData;
-    const sessionAge = Date.now() - timestamp;
-    
-    if (sessionAge > SESSION_DURATION) {
-      console.log('Session expired - redirecting to identify');
-      navigate('/identify');
-    }
-  }, [initialImage, initialMessage, sessionId, navigate]);
+  }, [initialMessages, conversationId, navigate]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -215,34 +94,63 @@ const ChatArea = ({ initialImage, initialMessage, sessionId, onHerbIdentified, o
     fileInputRef.current.click();
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!inputValue.trim() && !selectedFile) return;
     if (isAIResponding) return; // Prevent sending while AI is responding
 
-    const hasImage = !!selectedFile;
-    const newMessage = {
+    const userMessage = {
       id: Date.now(),
       sender: 'user',
       text: inputValue,
-      image: selectedFile,
-      timestamp: new Date(),
+      image: selectedFile, // base64 string
+      timestamp: new Date().toISOString(),
     };
 
-    setMessages(prev => {
-      const updatedMessages = [...prev, newMessage];
-      // Save immediately after user sends message
-      saveSessionData(sessionId, updatedMessages, Date.now());
-      // Trigger custom event to update sidebar
-      window.dispatchEvent(new Event('sessionsUpdated'));
-      return updatedMessages;
-    });
+    // Add user message to UI immediately
+    setMessages(prev => [...prev, userMessage]);
     
-    const imageUrl = selectedFile;
+    const textToSend = inputValue;
+    const imageToSend = selectedFile;
     setInputValue('');
     setSelectedFile(null);
+    setIsAIResponding(true);
 
-    // Simulate AI response - only show herb info if user sent an image
-    simulateAIResponse(hasImage, imageUrl);
+    try {
+      // Send message to backend
+      const response = await sendChatMessage({
+        textInput: textToSend || undefined,
+        conversationId: currentConversationId || undefined,
+        imageBase64: imageToSend || undefined,
+      });
+
+      // Update conversation ID if this was the first message
+      if (!currentConversationId && response.conversation_id) {
+        setCurrentConversationId(response.conversation_id);
+      }
+
+      // Transform and add AI response
+      const aiMessage = transformBackendResponse(response);
+      
+      setMessages(prev => {
+        const updatedMessages = [...prev, aiMessage];
+        // Save to localStorage
+        const convId = response.conversation_id || currentConversationId;
+        saveSessionData(convId, updatedMessages, Date.now());
+        window.dispatchEvent(new Event('sessionsUpdated'));
+        return updatedMessages;
+      });
+
+      // Check if response contains herbInfo and notify parent to open InfoPanel
+      if (aiMessage.herbInfo && onHerbIdentified) {
+        onHerbIdentified(aiMessage.herbInfo);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      // TODO: Show error message to user
+      // Remove user message or add error indicator
+    } finally {
+      setIsAIResponding(false);
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -398,9 +306,8 @@ const ChatArea = ({ initialImage, initialMessage, sessionId, onHerbIdentified, o
 };
 
 ChatArea.propTypes = {
-  initialImage: PropTypes.string,
-  initialMessage: PropTypes.string,
-  sessionId: PropTypes.number,
+  conversationId: PropTypes.string,
+  initialMessages: PropTypes.array,
   onHerbIdentified: PropTypes.func,
   onOpenInfoPanel: PropTypes.func,
 };
