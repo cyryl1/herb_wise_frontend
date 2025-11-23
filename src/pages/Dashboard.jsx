@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/dashboard/Sidebar';
 import ChatArea from '../components/dashboard/ChatArea';
 import InfoPanel from '../components/dashboard/InfoPanel';
+import { getMostRecentSession } from '../utils/storage';
 
 const Dashboard = () => {
   const location = useLocation();
@@ -10,6 +11,7 @@ const Dashboard = () => {
   const { conversationId, initialMessages, herbInfo: initialHerbInfo } = location.state || {};
   
   const [currentConversationId, setCurrentConversationId] = useState(conversationId || null);
+  const [loadedInitialMessages, setLoadedInitialMessages] = useState(initialMessages || null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [herbInfo, setHerbInfo] = useState(initialHerbInfo || null);
   const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(!!initialHerbInfo);
@@ -18,8 +20,19 @@ const Dashboard = () => {
     // If we have conversation ID from Identify page, set it as current
     if (conversationId) {
       setCurrentConversationId(conversationId);
+      setLoadedInitialMessages(initialMessages);
+    } else {
+      // On page reload (no location.state), load most recent conversation
+      const recentSession = getMostRecentSession();
+      if (recentSession) {
+        setCurrentConversationId(recentSession.sessionId);
+        setLoadedInitialMessages(null); // No initial messages - ChatArea will load from storage
+      } else {
+        // No sessions exist, redirect to identify
+        navigate('/identify', { replace: true });
+      }
     }
-  }, [conversationId]);
+  }, [conversationId, initialMessages, navigate]);
 
   const handleNewChat = () => {
     // Navigate to identify page to start a new chat
@@ -84,7 +97,7 @@ const Dashboard = () => {
         {/* Chat Area */}
         <ChatArea 
           conversationId={currentConversationId}
-          initialMessages={initialMessages}
+          initialMessages={loadedInitialMessages}
           onHerbIdentified={handleHerbIdentified}
           onOpenInfoPanel={() => setIsInfoPanelOpen(true)}
           key={currentConversationId}

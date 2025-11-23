@@ -7,7 +7,7 @@ import Footer from '../components/layout/Footer';
 
 const Home = () => {
   return (
-    <div className="bg-landing-background-light dark:bg-landing-background-dark font-display text-landing-text-body dark:text-gray-300 min-h-screen">
+    <div className="bg-landing-background-light dark:bg-landing-background-dark font-display text-landing-text-body dark:text-gray-300 min-h-screen page-transition">
       <div className="relative flex min-h-screen w-full flex-col group/design-root overflow-x-hidden">
         <div className="layout-container flex h-full grow flex-col">
           <div className="px-4 sm:px-8 md:px-16 lg:px-24 xl:px-40 flex flex-1 justify-center py-5">

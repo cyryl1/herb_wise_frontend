@@ -49,6 +49,52 @@
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
+/* Page Transitions */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromBottom {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-transition {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.slide-in-bottom {
+  animation: slideInFromBottom 0.4s ease-out;
+}
+
+/* Typewriter cursor effect for streaming messages */
+.streaming-cursor::after {
+  content: '▊';
+  animation: blink 1s step-end infinite;
+  color: currentColor;
+  opacity: 0.7;
+}
+
+@keyframes blink {
+  0%, 50% {
+    opacity: 0.7;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
 /* Base styles */
 body {
   @apply bg-landing-background-light dark:bg-landing-background-dark font-display text-landing-text-body dark:text-gray-300;

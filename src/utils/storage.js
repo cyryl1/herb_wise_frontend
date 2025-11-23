@@ -5,7 +5,9 @@ export const SESSIONS_STORAGE_KEY = import.meta.env.VITE_SESSIONS_STORAGE_KEY ||
 export const encryptData = (data) => {
   try {
     const jsonString = JSON.stringify(data);
-    const xorString = jsonString.split('').map((char, i) => 
+    // Use encodeURIComponent to handle Unicode characters before btoa
+    const utf8String = encodeURIComponent(jsonString);
+    const xorString = utf8String.split('').map((char, i) => 
       String.fromCharCode(char.charCodeAt(0) ^ ENCRYPTION_KEY.charCodeAt(i % ENCRYPTION_KEY.length))
     ).join('');
     return btoa(xorString);
@@ -17,9 +19,11 @@ export const encryptData = (data) => {
 export const decryptData = (encryptedData) => {
   try {
     const xorString = atob(encryptedData);
-    const jsonString = xorString.split('').map((char, i) => 
+    const utf8String = xorString.split('').map((char, i) => 
       String.fromCharCode(char.charCodeAt(0) ^ ENCRYPTION_KEY.charCodeAt(i % ENCRYPTION_KEY.length))
     ).join('');
+    // Use decodeURIComponent to handle Unicode characters after atob
+    const jsonString = decodeURIComponent(utf8String);
     return JSON.parse(jsonString);
   } catch {
     return null;
@@ -66,12 +70,23 @@ export const saveConversation = (messagesToSave, currentSessionId) => {
 
 // Generate chat title from first user message
 export const generateChatTitle = (messages) => {
-  const firstUserMessage = messages.find(msg => msg.sender === 'user' && msg.text);
-  if (firstUserMessage && firstUserMessage.text) {
-    // Take first 30 characters and add ellipsis if needed
-    const title = firstUserMessage.text.substring(0, 30);
-    return title.length < firstUserMessage.text.length ? `${title}...` : title;
+  const firstUserMessage = messages.find(msg => msg.sender === 'user');
+  
+  if (!firstUserMessage) return 'New Chat';
+  
+  // If user sent text, use that
+  if (firstUserMessage.text) {
+    // Remove HTML tags and clean up
+    const cleanText = firstUserMessage.text.replace(/<[^>]*>/g, '').trim();
+    const title = cleanText.substring(0, 40);
+    return title.length < cleanText.length ? `${title}...` : title;
   }
+  
+  // If user only sent an image
+  if (firstUserMessage.image) {
+    return '🖼️ Image Identification';
+  }
+  
   return 'New Chat';
 };
 
@@ -85,6 +100,14 @@ export const getAllSessions = () => {
   } catch {
     return [];
   }
+};
+
+// Get the most recent session
+export const getMostRecentSession = () => {
+  const sessions = getAllSessions();
+  if (sessions.length === 0) return null;
+  // Sessions are already sorted by lastUpdated (most recent first)
+  return sessions[0];
 };
 
 // Save a session to the sessions list
@@ -141,11 +164,6 @@ export const saveSessionData = (sessionId, messages, timestamp) => {
     localStorage.setItem(key, encrypted);
     // Also update the sessions list
     saveSessionToList(sessionId, messages, timestamp);
-    console.log('💾 Session saved:', {
-      sessionId,
-      messageCount: messages.length,
-      lastUpdated: conversationData.lastUpdated
-    });
   }
 };
 

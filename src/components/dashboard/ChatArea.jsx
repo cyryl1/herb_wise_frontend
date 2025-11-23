@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import { 
   getSessionData,
@@ -8,9 +7,8 @@ import {
 import { sendChatMessage, transformBackendResponse } from '../../services/api';
 
 const ChatArea = ({ conversationId, initialMessages, onHerbIdentified, onOpenInfoPanel }) => {
-  const navigate = useNavigate();
   
-  const [messages, setMessages] = useState(initialMessages || [
+  const [messages, setMessages] = useState([
     {
       id: 'welcome',
       sender: 'ai',
@@ -22,54 +20,38 @@ const ChatArea = ({ conversationId, initialMessages, onHerbIdentified, onOpenInf
   const [selectedFile, setSelectedFile] = useState(null);
   const [isAIResponding, setIsAIResponding] = useState(false);
   const [currentConversationId, setCurrentConversationId] = useState(conversationId || null);
+  const hasInitializedRef = useRef(false);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+  const streamingIntervalRef = useRef(null);
 
-  // Load conversation data when conversationId changes
+  // Save initial messages if provided from Identify page (FIRST - only once)
   useEffect(() => {
-    if (!currentConversationId) return;
-
-    const sessionData = getSessionData(currentConversationId);
-    if (sessionData && sessionData.messages) {
-      console.log('📂 Loading conversation:', currentConversationId, 'with', sessionData.messages.length, 'messages');
-      setMessages(sessionData.messages);
-    }
-  }, [currentConversationId]);
-
-  // Save initial messages if provided from Identify page
-  useEffect(() => {
-    if (initialMessages && initialMessages.length > 0 && conversationId) {
+    if (initialMessages && initialMessages.length > 0 && conversationId && !hasInitializedRef.current) {
+      hasInitializedRef.current = true;
       setCurrentConversationId(conversationId);
       setMessages(initialMessages);
       saveSessionData(conversationId, initialMessages, Date.now());
-      window.dispatchEvent(new Event('sessionsUpdated'));
+      setTimeout(() => window.dispatchEvent(new Event('sessionsUpdated')), 0);
     }
   }, [initialMessages, conversationId]);
 
-  // Session validation for direct dashboard access
+  // Load conversation data when conversationId changes (SECOND - for switching conversations)
   useEffect(() => {
-    // Skip validation if we have initial messages (new session from Identify)
-    if (initialMessages) {
+    // Skip if this is the initial load with initialMessages
+    if (initialMessages && initialMessages.length > 0) {
       return;
     }
-
-    // If no conversationId provided, redirect to identify
-    if (!conversationId) {
-      console.log('No conversation ID - redirecting to identify');
-      navigate('/identify');
-      return;
-    }
-
-    // Check if conversation exists
-    const sessionData = getSessionData(conversationId);
     
-    if (!sessionData) {
-      console.log('Conversation not found - redirecting to identify');
-      navigate('/identify');
-    } else {
-      setCurrentConversationId(conversationId);
+    if (!currentConversationId) {
+      return;
     }
-  }, [initialMessages, conversationId, navigate]);
+
+    const sessionData = getSessionData(currentConversationId);
+    if (sessionData && sessionData.messages) {
+      setMessages(sessionData.messages);
+    }
+  }, [currentConversationId, initialMessages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -78,6 +60,15 @@ const ChatArea = ({ conversationId, initialMessages, onHerbIdentified, onOpenInf
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Cleanup streaming interval on unmount
+  useEffect(() => {
+    return () => {
+      if (streamingIntervalRef.current) {
+        clearInterval(streamingIntervalRef.current);
+      }
+    };
+  }, []);
 
   const handleFileSelect = (event) => {
     const file = event.target.files[0];
@@ -106,14 +97,20 @@ const ChatArea = ({ conversationId, initialMessages, onHerbIdentified, onOpenInf
       timestamp: new Date().toISOString(),
     };
 
-    // Add user message to UI immediately
-    setMessages(prev => [...prev, userMessage]);
-    
     const textToSend = inputValue;
     const imageToSend = selectedFile;
     setInputValue('');
     setSelectedFile(null);
     setIsAIResponding(true);
+
+    // Add user message to UI and save immediately
+    setMessages(prev => {
+      const withUserMessage = [...prev, userMessage];
+      if (currentConversationId) {
+        saveSessionData(currentConversationId, withUserMessage, Date.now());
+      }
+      return withUserMessage;
+    });
 
     try {
       // Send message to backend
@@ -129,16 +126,55 @@ const ChatArea = ({ conversationId, initialMessages, onHerbIdentified, onOpenInf
       }
 
       // Transform and add AI response
-      const aiMessage = transformBackendResponse(response);
+      const aiMessage = await transformBackendResponse(response);
       
-      setMessages(prev => {
-        const updatedMessages = [...prev, aiMessage];
-        // Save to localStorage
-        const convId = response.conversation_id || currentConversationId;
-        saveSessionData(convId, updatedMessages, Date.now());
-        window.dispatchEvent(new Event('sessionsUpdated'));
-        return updatedMessages;
-      });
+      // Add message with empty text first for streaming effect
+      const messageId = Date.now();
+      const streamingMessage = {
+        ...aiMessage,
+        id: messageId,
+        text: '',
+        isStreaming: true
+      };
+      
+      setMessages(prev => [...prev, streamingMessage]);
+      
+      // Simulate streaming by gradually revealing text
+      const fullText = aiMessage.text || '';
+      let currentIndex = 0;
+      const charsPerInterval = 2; // Characters to add per interval
+      const intervalMs = 20; // Milliseconds between updates
+      
+      streamingIntervalRef.current = setInterval(() => {
+        currentIndex += charsPerInterval;
+        
+        if (currentIndex >= fullText.length) {
+          // Streaming complete
+          clearInterval(streamingIntervalRef.current);
+          
+          setMessages(prev => {
+            const updatedMessages = prev.map(msg => 
+              msg.id === messageId 
+                ? { ...aiMessage, id: messageId, isStreaming: false }
+                : msg
+            );
+            
+            // Save to localStorage with complete message
+            const convId = response.conversation_id || currentConversationId;
+            saveSessionData(convId, updatedMessages, Date.now());
+            setTimeout(() => window.dispatchEvent(new Event('sessionsUpdated')), 0);
+            
+            return updatedMessages;
+          });
+        } else {
+          // Update partial text
+          setMessages(prev => prev.map(msg => 
+            msg.id === messageId 
+              ? { ...msg, text: fullText.substring(0, currentIndex) }
+              : msg
+          ));
+        }
+      }, intervalMs);
 
       // Check if response contains herbInfo and notify parent to open InfoPanel
       if (aiMessage.herbInfo && onHerbIdentified) {
@@ -200,13 +236,14 @@ const ChatArea = ({ conversationId, initialMessages, onHerbIdentified, onOpenInf
               )}
               
               {msg.text && (
-                <p className={`text-base font-normal leading-normal flex max-w-xl rounded-lg px-4 py-3 ${
-                  msg.sender === 'user' 
-                    ? 'rounded-br-none bg-dash-primary/20 dark:bg-dash-primary/30' 
-                    : 'rounded-bl-none bg-dash-surface-light dark:bg-dash-surface-dark'
-                }`}>
-                  {msg.text}
-                </p>
+                <div 
+                  className={`text-base font-normal leading-relaxed max-w-xl rounded-lg px-4 py-3 ${
+                    msg.sender === 'user' 
+                      ? 'rounded-br-none bg-dash-primary/20 dark:bg-dash-primary/30' 
+                      : 'rounded-bl-none bg-dash-surface-light dark:bg-dash-surface-dark'
+                  } ${msg.isStreaming ? 'streaming-cursor' : ''}`}
+                  dangerouslySetInnerHTML={{ __html: msg.text }}
+                />
               )}
               
               {/* Herb Info Card - Inline in chat */}

@@ -26,13 +26,15 @@ const InfoPanel = ({ herbInfo, onClose }) => {
       )}
       
       <div className="p-6">
-        <div
-          className="relative w-full h-56 rounded-lg bg-cover bg-center mb-6"
-          data-alt={`A photograph of ${herbInfo.name}`}
-          style={{
-            backgroundImage: `url('${herbInfo.image}')`,
-          }}
-        ></div>
+        {herbInfo.image && (
+          <div
+            className="relative w-full h-56 rounded-lg bg-cover bg-center mb-6"
+            data-alt={`A photograph of ${herbInfo.name}`}
+            style={{
+              backgroundImage: `url('${herbInfo.image}')`,
+            }}
+          ></div>
+        )}
         
         <div className="mb-6 p-4 rounded-lg bg-dash-background-light dark:bg-dash-background-dark">
           <h2 className="text-2xl font-bold">{herbInfo.name}</h2>

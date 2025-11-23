@@ -30,7 +30,7 @@ const Identify = () => {
       console.log('✅ Received response:', response);
 
       // Transform backend response to frontend format
-      const aiMessage = transformBackendResponse(response);
+      const aiMessage = await transformBackendResponse(response);
       
       // Create user message
       const userMessage = {
@@ -58,7 +58,7 @@ const Identify = () => {
   };
 
   return (
-    <div className="bg-start-background-light dark:bg-start-background-dark font-display text-start-text-main dark:text-gray-200 min-h-screen">
+    <div className="bg-start-background-light dark:bg-start-background-dark font-display text-start-text-main dark:text-gray-200 min-h-screen page-transition">
       <div className="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
         <div className="layout-container flex h-full grow flex-col">
           <div className="flex flex-1 justify-center px-4 sm:px-8 md:px-12 lg:px-20 xl:px-40 py-5">
