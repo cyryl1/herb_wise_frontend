@@ -200,7 +200,7 @@ const ChatArea = ({ conversationId, initialMessages, onHerbIdentified, onOpenInf
       <header className="shrink-0 flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700/50 bg-dash-surface-light dark:bg-dash-surface-dark h-[81px]">
         <div className="flex min-w-72 flex-col">
           <p className="tracking-light text-xl font-bold leading-tight">
-            Herb Identification
+            HerbWise
           </p>
           <p className="text-dash-primary text-sm font-normal leading-normal">
             Active now

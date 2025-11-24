@@ -7,7 +7,7 @@ const Footer = () => {
         <p className="text-sm text-landing-text-secondary dark:text-gray-400">
           © 2024 HerbWise. All rights reserved.
         </p>
-        <div className="flex items-center gap-6 text-sm text-landing-text-body dark:text-gray-300">
+        {/* <div className="flex items-center gap-6 text-sm text-landing-text-body dark:text-gray-300">
           <a
             className="hover:text-landing-primary dark:hover:text-landing-primary-light"
             href="#"
@@ -26,7 +26,7 @@ const Footer = () => {
           >
             Terms of Service
           </a>
-        </div>
+        </div> */}
       </div>
     </footer>
   );
