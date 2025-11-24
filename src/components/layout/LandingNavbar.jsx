@@ -13,7 +13,7 @@ const LandingNavbar = () => {
         </h2>
       </div>
       <div className="hidden md:flex flex-1 justify-end items-center gap-8">
-        <div className="flex items-center gap-9">
+        {/* <div className="flex items-center gap-9">
           <a
             className="text-landing-text-body dark:text-gray-300 text-sm font-medium leading-normal"
             href="#"
@@ -26,7 +26,7 @@ const LandingNavbar = () => {
           >
             About
           </a>
-        </div>
+        </div> */}
         <Link
           to="/identify"
           className="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-4 bg-landing-primary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:opacity-90 transition-opacity"
